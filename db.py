@@ -1,45 +1,62 @@
-from sqlalchemy import create_engine
-from sqlalchemy import Column, String, Integer, Date
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
-
-# connect to the database
-engine = create_engine('sqlite:///loans.sqlite', echo=True)
-# manage tables
-base = declarative_base()
+import datetime
+import orm
+import utils
 
 
-# we need the following objects: user, loan
-class User(base):
-    __tablename__ = 'users'
-
-    user_id = Column(Integer, primary_key=True)
-    first_name = Column(String)
-    last_name = Column(String)
-
-    def __init__(self, user_id, first_name, last_name):
-        self.user_id = user_id
-        self.first_name = first_name
-        self.last_name = last_name
+def create_user(session, first_name, last_name):
+    user = orm.User(first_name, last_name)
+    user.loans = []
+    session.add(user)
+    session.flush()
+    session.commit()
+    return user
 
 
-class Loan(base):
-    __tablename__ = 'loans'
+def create_loan(session, user_id, principal, term, interest_rate):
+    schedules = []
+    user = fetch_user_by_id(session, user_id)
+    print(user)
+    # create the loan
+    loan = orm.Loan(principal, term, interest_rate, datetime.datetime.now())
 
-    loan_id = Column(Integer, primary_key=True)
-    user_id = Column(Integer, foreign_key=True)
-    amount = Column(Integer)
-    interest_rate = Column(Integer)
-    term = Column(Integer)
-    created_at = Column(Date)
+    # create the loan schedule
+    for idx, record in enumerate(utils.calculate_payment_schedule(principal, interest_rate, term)):
+        (monthly_payment, interest_paid, principal_paid, remaining_balance) = record
+        schedules.append(orm.LoanSchedule(idx, monthly_payment, interest_paid, principal_paid, remaining_balance))
 
-    def __init__(self, loan_id, user_id, amount, interest_rate, term, created_at):
-        self.loan_id = loan_id
-        self.user_id = user_id
-        self.amount = amount
-        self.interest_rate = interest_rate
-        self.term = term
-        self.created_at = created_at
+    loan.schedules = schedules
+    loan.user_id = user_id
+    # if hasattr(user, "loans"):
+    #     user.loans.append(loan)
+    # else:
+    #     user.loans = [loan]
+    session.add(loan)
+    session.flush()
+    session.commit()
+    return loan
 
 
-base.metadata.create_all(engine)
+def fetch_user_by_id(session, user_id):
+    return session.query(orm.User).filter(orm.User.id == user_id).one()
+
+def fetch_user(session, first_name, last_name):
+    users = []
+    for user in session.query(orm.User).filter(orm.User.first_name == first_name and orm.User.last_name == last_name):
+        users.append(user)
+
+    return users
+
+def fetch_loan_schedule(session):
+    print()
+
+
+def fetch_loan_summary(session, month):
+    print(month)
+
+
+def fetch_loans(session, user_id):
+    print(user_id)
+
+
+def share_loan(session, user_id_1, user_id_2):
+    print(user_id_1, user_id_2)
