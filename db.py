@@ -1,5 +1,5 @@
-from sqlalchemy import func, and_
-from orm import Loan, LoanSchedule, User
+from sqlalchemy import func, and_, or_
+from orm import Loan, LoanSchedule, User, Sharing
 import utils
 
 
@@ -36,6 +36,11 @@ def fetch_user(session, email):
 
 
 def fetch_loans(session, user_id):
+    # Fetch the shared loans as well
+    sharers = []
+    for items in get_sharers(session, user_id):
+        sharers.append(items[0])
+
     return session\
         .query(Loan.id,
                Loan.principal,
@@ -43,7 +48,7 @@ def fetch_loans(session, user_id):
                Loan.term,
                Loan.created_at
                ) \
-        .filter(Loan.user_id == user_id) \
+        .filter(or_(Loan.user_id == user_id, Loan.user_id.in_(sharers))) \
         .all()
 
 
@@ -72,5 +77,20 @@ def fetch_loan_summary(session, loan_id, month):
     return interest_paid, principal_paid, remaining_balance
 
 
-def share_loan(session, user_id_1, user_id_2):
-    print(user_id_1, user_id_2)
+def share_loan(session, sharer_id, shared_with_id, loan_id):
+    sharing = Sharing(sharer_id, shared_with_id, loan_id)
+    session.add(sharing)
+    session.flush()
+    session.commit()
+    return sharing
+
+
+def get_sharers(session, shared_with_id):
+    return session\
+        .query(Sharing.sharer_id)\
+        .filter(Sharing.shared_with_id == shared_with_id)\
+        .all()
+
+
+def user_exist(session, user_id):
+    return session.query(func.count()).filter(User.id == user_id).scalar() > 0

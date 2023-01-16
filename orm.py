@@ -10,7 +10,6 @@ engine = create_engine('sqlite:///loans.sqlite', echo=True)
 base = declarative_base()
 
 
-# we need the following objects: user, loan
 class User(base):
     __tablename__ = 'users'
 
@@ -29,6 +28,19 @@ class User(base):
     def __repr__(self):
         return "<User (email=`%s`)>" % self.email
 
+
+class Sharing(base):
+    __tablename__ = 'sharing'
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    sharer_id = Column(Integer, nullable=False)
+    shared_with_id = Column(Integer, nullable=False)
+    loan_id = Column(Integer, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+
+    def __init__(self, sharer_id, shared_with_id, loan_id):
+        self.sharer_id = sharer_id
+        self.shared_with_id = shared_with_id
+        self.loan_id = loan_id
 
 class Loan(base):
     __tablename__ = 'loans'
@@ -58,11 +70,11 @@ class LoanSchedule(base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     loan_id = Column(Integer, ForeignKey("loans.id"))
-    month = Column(Integer)
-    monthly_payment = Column(Float)
-    interest_paid = Column(Float)
-    principal_paid = Column(Float)
-    remaining_balance = Column(Float)
+    month = Column(Integer, nullable=False)
+    monthly_payment = Column(Float, nullable=False)
+    interest_paid = Column(Float, nullable=False)
+    principal_paid = Column(Float, nullable=False)
+    remaining_balance = Column(Float, nullable=False)
 
     loan = relationship("Loan", back_populates="schedule_records")
 
