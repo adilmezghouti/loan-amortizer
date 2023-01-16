@@ -1,9 +1,12 @@
 # loan-amortizer
-Loan Amortization API
+Restful API to generate, fetch, and calculate loan related information.
 
 # Instructions
 Install dependencies
 ```pipenv install```
+
+Run unit tests
+```python -m unittest discover -p "*_test.py"```
 
 Run project
 ``` uvicorn main:app --reload```
