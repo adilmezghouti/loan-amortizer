@@ -1,9 +1,6 @@
 import numpy as np
 
-# loan amortization formula
-# Monthly Payment = (P * (Interest Rate / Term)) / (1 - (1 + Interest Rate / Term)^(-Term * 12))
 
-# Term: number of months
 def calculate_monthly_payment(principal, interest_rate, term):
     numerator = (principal * (interest_rate / 12))
     denominator = (1 - np.power(1 + (interest_rate / 12), -term))
@@ -19,7 +16,12 @@ def calculate_payment_schedule(principal, interest_rate, term):
         interest_paid = monthly_rate * principal
         principal_paid = monthly_payment - interest_paid
         principal -= principal_paid
-        schedule_array.append((monthly_payment, interest_paid, principal_paid, principal))
+        schedule_array.append(
+            (round(monthly_payment, 2),
+             round(interest_paid, 2),
+             round(principal_paid, 2),
+             round(principal, 2))
+        )
 
     return schedule_array
 

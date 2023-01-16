@@ -1,5 +1,6 @@
-from sqlalchemy import Column, String, Integer, Date, Float, ForeignKey,create_engine
+from sqlalchemy import Column, String, Integer, Date, Float, ForeignKey, create_engine, DateTime
 from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
 
 # connect to the database
@@ -14,16 +15,19 @@ class User(base):
     __tablename__ = 'users'
 
     id = Column(Integer, primary_key=True, autoincrement=True)
-    first_name = Column(String)
-    last_name = Column(String)
+    email = Column(String, nullable=False, unique=True)
+    first_name = Column(String, nullable=False)
+    last_name = Column(String, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
     loans = relationship("Loan", back_populates="user")
 
-    def __init__(self, first_name, last_name):
+    def __init__(self, email, first_name, last_name):
+        self.email = email
         self.first_name = first_name
         self.last_name = last_name
 
     def __repr__(self):
-        return "<User (first name=`%s`)>" % self.first_name
+        return "<User (email=`%s`)>" % self.email
 
 
 class Loan(base):
@@ -31,19 +35,19 @@ class Loan(base):
 
     id = Column(Integer, primary_key=True, autoincrement=True)
     user_id = Column(Integer, ForeignKey("users.id"))
-    principal = Column(Integer)
-    interest_rate = Column(Integer)
-    term = Column(Integer)
-    created_at = Column(Date)
+    principal = Column(Integer, nullable=False)
+    interest_rate = Column(Integer, nullable=False)
+    term = Column(Integer, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     user = relationship("User", back_populates="loans")
     schedule_records = relationship("LoanSchedule", back_populates="loan")
 
-    def __init__(self, principal, interest_rate, term, created_at):
+    def __init__(self, user_id, principal, interest_rate, term):
+        self.user_id = user_id
         self.principal = principal
         self.interest_rate = interest_rate
         self.term = term
-        self.created_at = created_at
 
     def __repr__(self):
         return "<Loan (principal=`%f`)>" % self.principal
@@ -62,7 +66,8 @@ class LoanSchedule(base):
 
     loan = relationship("Loan", back_populates="schedule_records")
 
-    def __init__(self, month, monthly_payment, interest_paid, principal_paid, remaining_balance):
+    def __init__(self, loan_id, month, monthly_payment, interest_paid, principal_paid, remaining_balance):
+        self.loan_id = loan_id
         self.month = month
         self.monthly_payment = monthly_payment
         self.interest_paid = interest_paid
