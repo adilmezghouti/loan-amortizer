@@ -32,7 +32,7 @@ def fetch_user_by_id(session, user_id):
 
 
 def fetch_user(session, email):
-    return session.query(User).filter(User.email == email)
+    return session.query(User).filter(User.email == email).all()
 
 
 def fetch_loans(session, user_id):
@@ -65,13 +65,13 @@ def fetch_loan_schedule(session, loan_id):
 def fetch_loan_summary(session, loan_id, month):
     (interest_paid, principal_paid) = session \
         .query(
-        func.sum(LoanSchedule.interest_paid),
-        func.sum(LoanSchedule.principal_paid)
+        func.coalesce(func.sum(LoanSchedule.interest_paid), 0),
+        func.coalesce(func.sum(LoanSchedule.principal_paid), 0)
     ) \
         .filter(and_(LoanSchedule.loan_id == loan_id, LoanSchedule.month < month)) \
         .one()
     remaining_balance = session \
-        .query(LoanSchedule.remaining_balance) \
+        .query(LoanSchedule.remaining_balance + LoanSchedule.principal_paid) \
         .filter(and_(LoanSchedule.loan_id == loan_id, LoanSchedule.month == month)) \
         .scalar()
     return interest_paid, principal_paid, remaining_balance
